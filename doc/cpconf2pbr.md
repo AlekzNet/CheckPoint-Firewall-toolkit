@@ -38,6 +38,12 @@ optional arguments:
                         of servers, default=1000
 ```
 
+If tested OK, save the configuration with:
+
+```txt
+clish -c "save config"
+```
+
 ### "Exception" PBR rules based on the clish config
 
 This mode is used to create PBR rule to except the local traffic from the PBR. All traffic destined to the directly connected networks or non-default routes will be exempted from the PBR rules with the lower priority.
