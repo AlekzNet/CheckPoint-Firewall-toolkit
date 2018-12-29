@@ -127,7 +127,7 @@ if args.ignore_if:
 if args.ignore_ip:
 	ignore_ip=re.sub(r'\.','\.',re.sub(r',','[ ]|',args.ignore_ip)) + "[ ]"
 else:
-	ignore_ip=False	
+	ignore_ip='^$'
 	
 
 # set interface bond1.2 ipv4-address 1.2.3.1 mask-length 29
@@ -140,8 +140,7 @@ re_route = re.compile(r'set\s+static-route\s+(?P<ip>\S+)\s+nexthop\s+gateway\s+a
 re_ignore_if = re.compile(ignore_if, re.IGNORECASE)
 
 #IP addresses to ignore
-if ignore_ip:
-	re_ignore_ip = re.compile(ignore_ip)
+re_ignore_ip = re.compile(ignore_ip)
 
 f=sys.stdin if "-" == args.conf else open (args.conf,"r")
 
