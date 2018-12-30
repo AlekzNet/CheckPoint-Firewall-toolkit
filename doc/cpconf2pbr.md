@@ -9,7 +9,7 @@ cpconf2pbr.py creates PBR rules, based on:
 ```txt
 usage: cpconf2pbr.py [-h] [--noclish] [--ifprio IFPRIO] [--rtprio RTPRIO]
                      [--ignore_if IGNORE_IF] [--ignore_ip IGNORE_IP] [--list]
-                     [--table TABLE] [--listprio LISTPRIO]
+                     [--dst | --src] [--table TABLE] [--listprio LISTPRIO]
                      [conf]
 
 positional arguments:
@@ -33,9 +33,12 @@ optional arguments:
                         default=none
   --list                The input is a list of IP-addresses, not a clish
                         config
+  --dst                 The list contains the destination addresses
+  --src                 The list contains the source addresses
   --table TABLE         Table name, default = default
   --listprio LISTPRIO   The beginning priority of the PBR rules for the list
                         of servers, default=1000
+
 ```
 
 If tested OK, save the configuration with:
@@ -99,7 +102,7 @@ cat testpbrlist.txt
 Command:
 
 ```txt
-cat testpbrlist.txt | cpconf2pbr.py --list --table deftable 
+cpconf2pbr.py --list --src  --table deftable testpbrlist.txt
 ```
 
 Result:
