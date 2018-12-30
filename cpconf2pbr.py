@@ -79,18 +79,22 @@ def print_pbr_route(ip, gw):
 	cur_rtprio += 1	
 	
 def print_pbr_list(ip,table):
-	global cur_listprio
+	global cur_listprio, direction
 	if args.noclish:
-		print "set pbr rule priority", cur_listprio, "match from", str(ip)
+		print "set pbr rule priority", cur_listprio, "match", direction, str(ip)
 		print "set pbr rule priority", cur_listprio, "action table", table
 	else:
-		print "clish -c \"set pbr rule priority", cur_listprio, "match from", str(ip), "\""
+		print "clish -c \"set pbr rule priority", cur_listprio, "match", direction, str(ip), "\""
 		print "clish -c \"set pbr rule priority", cur_listprio, "action table", table, "\""		
 	cur_listprio +=1
 
 def parse_list(line):
 # Replace all duplicate spaces and tabs with one space
 	line=re.sub('\s+',' ', line)
+	if len(line.split(' ')) > 2:
+		print >>sys.stderr, 'ERROR: wrong file format. This line contains too many fields:'
+		print >>sys.stderr, line
+		sys.exit(1)
 # Is it a cidr notation	
 	if "/" in line:
 # Remove spaces and return the network object
@@ -110,11 +114,14 @@ parser.add_argument('--rtprio', default=100, type=int, help="The beginning prior
 parser.add_argument('--ignore_if', default="", help="Comma separated list of interfaces to ignore, default=mgmt,sync,lo")
 parser.add_argument('--ignore_ip', default="", help="Comma separated list of IP-addresses to ignore, default=none")
 parser.add_argument('--list', default=False, help="The input is a list of IP-addresses, not a clish config", action="store_true")
+dir = parser.add_mutually_exclusive_group()
+dir.add_argument('--dst', default=False, help="The list contains the destination addresses", action="store_true")
+dir.add_argument('--src', default=False, help="The list contains the source addresses", action="store_true")
 parser.add_argument('--table', default="default", help="Table name, default = default")
 parser.add_argument('--listprio', default=1000, type=int, help="The beginning priority of the PBR rules for the list of servers, default=1000")
 
 args = parser.parse_args()
-global cur_ifprio, cur_rtprio, cur_listprio
+global cur_ifprio, cur_rtprio, cur_listprio, direction
 cur_ifprio = args.ifprio
 cur_rtprio = args.rtprio
 cur_listprio = args.listprio
@@ -128,8 +135,16 @@ if args.ignore_ip:
 	ignore_ip=re.sub(r'\.','\.',re.sub(r',','[ ]|',args.ignore_ip)) + "[ ]"
 else:
 	ignore_ip='^$'
-	
 
+if args.list:
+	if args.dst: 
+		direction="to"
+	elif args.src:
+		direction="from"
+	else:
+		print >>sys.stderr, 'ERROR: the \"--list\" option requires either \"--src\" or \"--dst\" '
+		sys.exit(1)
+		
 # set interface bond1.2 ipv4-address 1.2.3.1 mask-length 29
 re_intf = re.compile(r'set\s+interface\s+(?P<ifname>\S+)\s+ipv4-address\s+(?P<ip>\S+)\s+mask-length\s+(?P<mask>\S+)', re.IGNORECASE)
 
@@ -142,26 +157,37 @@ re_ignore_if = re.compile(ignore_if, re.IGNORECASE)
 #IP addresses to ignore
 re_ignore_ip = re.compile(ignore_ip)
 
-f=sys.stdin if "-" == args.conf else open (args.conf,"r")
+if "-" == args.conf:
+	f=sys.stdin		
+else: 
+	try:
+		 f=open (args.conf,"r")
+	except IOError:
+		print >>sys.stderr, 'ERROR: Can\'t open file', args.conf
+		sys.exit(1)
 
+# If a list of IP-addresses is provided:
 if args.list:
 	for line in f:
 		line = line.strip()	
 		print_pbr_list(parse_list(line),args.table)
+# If a clish config provided:
 else:
 	for line in f:
 		line = line.strip()
+# Is it interface config line?
 		if re_intf.search(line):
 			res=re_intf.search(line)
 			ifname=res.group('ifname')
 			ip=res.group('ip')
-	# Checking if the line should be ignored		
-	# Added " " at the end of the interface names to distinguish between 1.2 and 1.21 			
+# Checking if the line should be ignored		
+# Added " " at the end of the interface names to distinguish between 1.2 and 1.21 			
 			if not re_ignore_if.search(ifname + " ") and not re_ignore_ip.search(ip + " "):
 				print_pbr_iface(ifname, ip, res.group('mask'))
+# If it's a static route line?
 		elif re_route.search(line):
 			ip=re_route.search(line).group('ip')
 			gw=re_route.search(line).group('gw')
-	# Checking if the line should be ignored		
+# Checking if the line should be ignored		
 			if not re_ignore_ip.search(ip + " ") and not re_ignore_ip.search(gw + " "):
 				print_pbr_route(ip, gw)
