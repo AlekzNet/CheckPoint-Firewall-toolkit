@@ -49,31 +49,31 @@ except ImportError:
 
 # Make a valid table name from inteface names (bond1.2 -> bond1o2) or network IP's (10.175.255.0/24 -> 10o175o255o0m24)
 def tname(name):
-	return re.sub(r'/','m',re.sub(r'\.','o',name))
+	return "t"+re.sub(r'/','m',re.sub(r'\.','o',name))
 
 def print_pbr_iface(iface, ip, mask):
-	global cur_ifprio
+	global cur_ifprio, table_prio
 	table = tname(iface)
 	addr=netaddr.IPNetwork(str(ip)+"/"+str(mask))
 	if args.noclish:
-		print "set pbr table", table, "static-route", str(ip) + "/" + str(mask), "nexthop gateway logical", iface, "priority", cur_ifprio
+		print "set pbr table", table, "static-route", str(addr.cidr), "nexthop gateway logical", iface, "priority", table_prio
 		print "set pbr rule priority", cur_ifprio, "match to", str(addr.cidr)
 		print "set pbr rule priority", cur_ifprio, "action table", table
 	else:
-		print "clish -c \"set pbr table", table, "static-route", str(ip) + "/" + str(mask), "nexthop gateway logical", iface, "priority", cur_ifprio, "\""
+		print "clish -c \"set pbr table", table, "static-route", str(addr.cidr), "nexthop gateway logical", iface, "priority", table_prio, "\""
 		print "clish -c \"set pbr rule priority", cur_ifprio, "match to", str(addr.cidr), "\""
 		print "clish -c \"set pbr rule priority", cur_ifprio, "action table", table, "\""
 	cur_ifprio += 1
 
 def print_pbr_route(ip, gw):
-	global cur_rtprio
+	global cur_rtprio, table_prio
 	table = tname(ip)
 	if args.noclish:	
-		print "set pbr table", table, "static-route", ip, "nexthop gateway address", gw, "priority", cur_rtprio
+		print "set pbr table", table, "static-route", ip, "nexthop gateway address", gw, "priority", table_prio
 		print "set pbr rule priority", cur_rtprio, "match to", ip
 		print "set pbr rule priority", cur_rtprio, "action table", table
 	else:
-		print "clish -c \"set pbr table", table, "static-route", ip, "nexthop gateway address", gw, "priority", cur_rtprio, "\""
+		print "clish -c \"set pbr table", table, "static-route", ip, "nexthop gateway address", gw, "priority", table_prio, "\""
 		print "clish -c \"set pbr rule priority", cur_rtprio, "match to", ip, "\""
 		print "clish -c \"set pbr rule priority", cur_rtprio, "action table", table, "\""	
 	cur_rtprio += 1	
@@ -121,7 +121,12 @@ parser.add_argument('--table', default="default", help="Table name, default = de
 parser.add_argument('--listprio', default=1000, type=int, help="The beginning priority of the PBR rules for the list of servers, default=1000")
 
 args = parser.parse_args()
-global cur_ifprio, cur_rtprio, cur_listprio, direction
+# cur_ifprio - current PBR priority for interface rules
+# cur_rtprio - current PBR priority for local route rules
+# cur_rtprio - current PBR priority for the list of IP-addresses rules
+# table_prio - table priority
+# direction - "direction" for the list of IP-addresses: "to" or "from""
+global cur_ifprio, cur_rtprio, cur_listprio, direction, table_prio
 cur_ifprio = args.ifprio
 cur_rtprio = args.rtprio
 cur_listprio = args.listprio
@@ -131,10 +136,11 @@ if args.ignore_if:
 # Added " " at the end of the interface names to distinguish between 1.2 and 1.21 	
 	ignore_if=re.sub(r'\.','\.',re.sub(r',','[ ]|',args.ignore_if)) + "[ ]|" + ignore_if
 
+# Do we need to ignore any IP-addresses besides the default route?
 if args.ignore_ip:
-	ignore_ip=re.sub(r'\.','\.',re.sub(r',','[ ]|',args.ignore_ip)) + "[ ]"
+	ignore_ip="default|"+re.sub(r'\.','\.',re.sub(r',','[ ]|',args.ignore_ip)) + "[ ]"
 else:
-	ignore_ip='^$'
+	ignore_ip="default"
 
 if args.list:
 	if args.dst: 
@@ -180,6 +186,7 @@ else:
 			res=re_intf.search(line)
 			ifname=res.group('ifname')
 			ip=res.group('ip')
+			table_prio = 2
 # Checking if the line should be ignored		
 # Added " " at the end of the interface names to distinguish between 1.2 and 1.21 			
 			if not re_ignore_if.search(ifname + " ") and not re_ignore_ip.search(ip + " "):
@@ -188,6 +195,7 @@ else:
 		elif re_route.search(line):
 			ip=re_route.search(line).group('ip')
 			gw=re_route.search(line).group('gw')
+			table_prio = 3
 # Checking if the line should be ignored		
 			if not re_ignore_ip.search(ip + " ") and not re_ignore_ip.search(gw + " "):
 				print_pbr_route(ip, gw)
