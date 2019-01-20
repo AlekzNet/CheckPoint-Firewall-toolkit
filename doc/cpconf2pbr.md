@@ -51,6 +51,8 @@ clish -c "save config"
 
 This mode is used to create PBR rule to except the local traffic from the PBR. All traffic destined to the directly connected networks or non-default routes will be exempted from the PBR rules with the lower priority.
 
+The interface related table are created with the priority "2", the static route related one with the priority "3".
+
 The source file should be made by the following command:
 
 ```txt
@@ -74,12 +76,12 @@ cat config.txt | cpconf2pbr.py
 Result:
 
 ```txt
-clish -c "set pbr table bond1o2 static-route 1.2.3.1/29 nexthop gateway logical bond1.2 priority 10 "
+clish -c "set pbr table tbond1o2 static-route 1.2.3.1/29 nexthop gateway logical bond1.2 priority 2 "
 clish -c "set pbr rule priority 10 match to 1.2.3.0/29 "
-clish -c "set pbr rule priority 10 action table bond1o2 "
-clish -c "set pbr table 10o175o255o0m24 static-route 10.175.255.0/24 nexthop gateway address 163.157.255.129 priority 100 "
+clish -c "set pbr rule priority 10 action table tbond1o2 "
+clish -c "set pbr table t10o175o255o0m24 static-route 10.175.255.0/24 nexthop gateway address 163.157.255.129 priority 3 "
 clish -c "set pbr rule priority 100 match to 10.175.255.0/24 "
-clish -c "set pbr rule priority 100 action table 10o175o255o0m24 "
+clish -c "set pbr rule priority 100 action table t10o175o255o0m24 "
 ```
 
 
