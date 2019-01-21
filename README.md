@@ -8,8 +8,9 @@ Various tools to work with CheckPoint firewall
 * fw_stat_ip_list.sh - shows statistics of the allowed traffic related to specified IP-addresses
 * fw_stat_ip_list_10min.sh - same as above, but for every 10min
 
-For both fw_stat_ip_list.sh and fw_stat_ip_list_10min.sh, the CheckPointlogsshould ve converted to TXT using the following format:
+For both fw_stat_ip_list.sh and fw_stat_ip_list_10min.sh, the CheckPointlogs should be converted to TXT using the following format:
 
 ```txt
 num;date;time;src;dst;proto;service;action
 ```
+See the explanation here: https://www.alekz.net/archives/1480
