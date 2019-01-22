@@ -7,6 +7,7 @@ Various tools to work with CheckPoint firewall
 * nopbr.sh - PBR tables and rules removal for CheckPoint GAIA 
 * fw_stat_ip_list.sh - shows statistics of the allowed traffic related to specified IP-addresses
 * fw_stat_ip_list_10min.sh - same as above, but for every 10min
+* cparse.sh - shows firewall objects in the form of `"name" (IP-address) (IP-address) ...`
 
 For both fw_stat_ip_list.sh and fw_stat_ip_list_10min.sh, the CheckPointlogs should be converted to TXT using the following format:
 
