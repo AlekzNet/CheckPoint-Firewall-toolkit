@@ -2,7 +2,9 @@
 
 cpconf2pbr.py creates PBR rules, based on:
 * CheckPoint GAIA clish configuration
-* List of IP addresses ("from" only at this time)
+* List of IP addresses
+
+and adds the IP-addresses from the list to the CP firewall configuration.
 
 ### Usage:
 
@@ -10,6 +12,7 @@ cpconf2pbr.py creates PBR rules, based on:
 usage: cpconf2pbr.py [-h] [--noclish] [--ifprio IFPRIO] [--rtprio RTPRIO]
                      [--ignore_if IGNORE_IF] [--ignore_ip IGNORE_IP] [--list]
                      [--dst | --src] [--table TABLE] [--listprio LISTPRIO]
+                     [--fw] [--group GROUP]
                      [conf]
 
 positional arguments:
@@ -38,6 +41,9 @@ optional arguments:
   --table TABLE         Table name, default = default
   --listprio LISTPRIO   The beginning priority of the PBR rules for the list
                         of servers, default=1000
+  --fw                  Create firewall commands to add the IP-addresses to
+                        the config
+  --group GROUP         Group name to add the IP-addresses to, default = g-pbr
 
 ```
 
@@ -87,7 +93,7 @@ clish -c "set pbr rule priority 100 action table t10o175o255o0m24 "
 
 ### PBR rules based on an IP-list
 
-Create the real PBR rules for a list of IP-addresses
+Create the real PBR rules and firewall objects for a list of IP-addresses
 
 #### Examples
 
@@ -101,7 +107,8 @@ cat testpbrlist.txt
 6.5.4.3/ 255.255.255.0
 ```
 
-Command:
+
+Command to create PBR rules:
 
 ```txt
 cpconf2pbr.py --list --src  --table deftable testpbrlist.txt
@@ -119,3 +126,48 @@ clish -c "set pbr rule priority 1002 action table deftable "
 clish -c "set pbr rule priority 1003 match from 6.5.4.3/24 "
 clish -c "set pbr rule priority 1003 action table deftable "
 ```
+
+Command to create PBR rules and add the objects to the firewall group g-server-list:
+
+```txt
+cpconf2pbr.py --list --src --table deftable --fw --group g-server-list testpbrlist.txt
+```
+
+Result:
+
+```txt
+clish -c "set pbr rule priority 1000 match from 1.2.3.4/32 "
+clish -c "set pbr rule priority 1000 action table deftable "
+clish -c "set pbr rule priority 1001 match from 2.3.4.0/23 "
+clish -c "set pbr rule priority 1001 action table deftable "
+clish -c "set pbr rule priority 1002 match from 3.4.5.0/22 "
+clish -c "set pbr rule priority 1002 action table deftable "
+clish -c "set pbr rule priority 1003 match from 6.5.4.3/24 "
+clish -c "set pbr rule priority 1003 action table deftable "
+cat > /tmp/dbedit_cmd_list << END
+create network_object_group g-server-list
+create host_plain h-001.002.003.004
+modify network_objects h-001.002.003.004 ipaddr 1.2.3.4
+update network_objects h-001.002.003.004
+addelement network_objects g-server-list '' network_objects:h-001.002.003.004
+create network n-002.003.004.000_23
+modify network_objects n-002.003.004.000_23 ipaddr 2.3.4.0
+modify network_objects n-002.003.004.000_23 netmask 255.255.254.0
+update network_objects n-002.003.004.000_23
+addelement network_objects g-server-list '' network_objects:n-002.003.004.000_23
+create network n-003.004.004.000_22
+modify network_objects n-003.004.004.000_22 ipaddr 3.4.4.0
+modify network_objects n-003.004.004.000_22 netmask 255.255.252.0
+update network_objects n-003.004.004.000_22
+addelement network_objects g-server-list '' network_objects:n-003.004.004.000_22
+create network n-006.005.004.000_24
+modify network_objects n-006.005.004.000_24 ipaddr 6.5.4.0
+modify network_objects n-006.005.004.000_24 netmask 255.255.255.0
+update network_objects n-006.005.004.000_24
+addelement network_objects g-server-list '' network_objects:n-006.005.004.000_24
+update network_objects g-server-list
+END
+#dbedit -local -ignore_script_failure -continue_updating -f /tmp/dbedit_cmd_list
+```
+
+The dbedit line is commented out in the output by default. Please make a revision of the database first.
