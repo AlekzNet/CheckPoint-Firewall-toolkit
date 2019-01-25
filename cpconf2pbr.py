@@ -88,6 +88,7 @@ def print_pbr_list(ip,table):
 		print "clish -c \"set pbr rule priority", cur_listprio, "action table", table, "\""		
 	cur_listprio +=1
 
+# Takes a string, extracts IP-address and returns a netaddr object
 def parse_list(line):
 # Replace all duplicate spaces and tabs with one space
 	line=re.sub('\s+',' ', line)
@@ -105,6 +106,53 @@ def parse_list(line):
 	else:
 		return netaddr.IPNetwork(line)
 			
+# Create object names:
+# h-001.020.003.004  -- for hosts
+# n-001.020.003.000_24 -- for networks			
+# net - netaddr.IPNetwork(ip)
+def net2name(ip):
+	net=str(ip.network)
+	mask=str(ip.prefixlen)
+	if ishost(ip): return 'h-'+ip2txt(net)
+	else: return 'n-'+ip2txt(net)+'_'+mask
+
+# ip - string IP-address -- 1.2.3.4
+# returns - 001.002.003.004
+def ip2txt(ip):
+	return ".".join(map(octet2txt,ip.split('.')))
+
+# octet - string of 0...255 (e.g. 12, 1, 123)
+# returns 012, 001, 123
+def octet2txt(octet):
+	if len(octet) < 3:
+		octet = "0" + octet if len(octet) == 2 else "00" + octet
+	return octet
+
+# Returns True if the netmask is 32, and False otherwise
+# ip is a netaddr object
+def ishost(ip):
+	return True if ip.prefixlen == 32 else False
+	
+# ip_list - list netaddr objects
+# group - name of the CheckPoint firewall group to add the IP-addresses to
+def print_dbedit_cmds(ip_list,group):
+	print "cat > /tmp/dbedit_cmd_list << END"
+	print "create network_object_group",group
+	for ip in ip_list:
+		name=net2name(ip)
+		if ishost(ip):
+			print "create host_plain",name
+			print "modify network_objects",name,"ipaddr",str(ip.network)	
+
+		else:
+			print "create network",name
+			print "modify network_objects",name,"ipaddr",str(ip.network)
+			print "modify network_objects",name,"netmask",str(ip.netmask)
+		print "update network_objects",name
+		print "addelement network_objects",group,"\'\' network_objects:" + name
+	print "update network_objects",group
+	print "END"
+	print "#dbedit -local -ignore_script_failure -continue_updating -f /tmp/dbedit_cmd_list"
 	
 parser = argparse.ArgumentParser()
 parser.add_argument('conf', default="-", nargs='?', help="Filename with a list of IP addresses, CheckPoint gateway conf filename, produced by \nclish -c 'show configuration' \nor \"-\" to read from the console (default)")
@@ -119,6 +167,8 @@ dir.add_argument('--dst', default=False, help="The list contains the destination
 dir.add_argument('--src', default=False, help="The list contains the source addresses", action="store_true")
 parser.add_argument('--table', default="default", help="Table name, default = default")
 parser.add_argument('--listprio', default=1000, type=int, help="The beginning priority of the PBR rules for the list of servers, default=1000")
+parser.add_argument('--fw', default=False, help="Create firewall commands to add the IP-addresses to the config", action="store_true")
+parser.add_argument('--group', default="g-pbr", help="Group name to add the IP-addresses to, default = g-pbr")
 
 args = parser.parse_args()
 # cur_ifprio - current PBR priority for interface rules
@@ -130,6 +180,9 @@ global cur_ifprio, cur_rtprio, cur_listprio, direction, table_prio
 cur_ifprio = args.ifprio
 cur_rtprio = args.rtprio
 cur_listprio = args.listprio
+
+# List of IP-addresses to add to the CheckPoint group
+ip_list = []
 
 ignore_if="mgmt|sync|lo"
 if args.ignore_if:
@@ -176,7 +229,9 @@ else:
 if args.list:
 	for line in f:
 		line = line.strip()	
-		print_pbr_list(parse_list(line),args.table)
+		ip = parse_list(line)
+		print_pbr_list(ip,args.table)
+		ip_list.append(ip)
 # If a clish config provided:
 else:
 	for line in f:
@@ -199,3 +254,7 @@ else:
 # Checking if the line should be ignored		
 			if not re_ignore_ip.search(ip + " ") and not re_ignore_ip.search(gw + " "):
 				print_pbr_route(ip, gw)
+
+# If needed creating CheckPoint dbedit commands to add IP-addresses to the specified group
+if args.fw:
+	print_dbedit_cmds(ip_list,args.group)
