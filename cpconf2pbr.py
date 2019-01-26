@@ -136,23 +136,20 @@ def ishost(ip):
 # ip_list - list netaddr objects
 # group - name of the CheckPoint firewall group to add the IP-addresses to
 def print_dbedit_cmds(ip_list,group):
-	print "cat > /tmp/dbedit_cmd_list << END"
-	print "create network_object_group",group
+	print 'echo -e "create network_object_group',group+'\\nupdate_all\\n-q\\n" | dbedit -local'
 	for ip in ip_list:
 		name=net2name(ip)
 		if ishost(ip):
-			print "create host_plain",name
-			print "modify network_objects",name,"ipaddr",str(ip.network)	
+			print 'echo -e "create host_plain',name+'\\nupdate_all\\n-q\\n" | dbedit -local'
+			print 'echo -e "modify network_objects',name,'ipaddr',str(ip.network)+'\\nupdate_all\\n-q\\n" | dbedit -local'
 
 		else:
-			print "create network",name
-			print "modify network_objects",name,"ipaddr",str(ip.network)
-			print "modify network_objects",name,"netmask",str(ip.netmask)
-		print "update network_objects",name
-		print "addelement network_objects",group,"\'\' network_objects:" + name
-	print "update network_objects",group
-	print "END"
-	print "#dbedit -local -ignore_script_failure -continue_updating -f /tmp/dbedit_cmd_list"
+			print 'echo -e "create network',name+'\\nupdate_all\\n-q\\n" | dbedit -local'
+			print 'echo -e "modify network_objects',name,'ipaddr',str(ip.network)+'\\nmodify network_objects',name,'netmask',str(ip.netmask)+'\\nupdate_all\\n-q\\n" | dbedit -local'
+#		print "update network_objects",name
+		print 'echo -e "addelement network_objects',group,'\'\' network_objects:' + name+'\\nupdate_all\\n-q\\n" | dbedit -local'
+#	print "update network_objects",group
+#	print "#dbedit -local -ignore_script_failure -continue_updating -f /tmp/dbedit_cmd_list"
 	
 parser = argparse.ArgumentParser()
 parser.add_argument('conf', default="-", nargs='?', help="Filename with a list of IP addresses, CheckPoint gateway conf filename, produced by \nclish -c 'show configuration' \nor \"-\" to read from the console (default)")
