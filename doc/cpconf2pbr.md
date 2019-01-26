@@ -141,30 +141,20 @@ clish -c "set pbr rule priority 1002 match from 3.4.5.0/22 "
 clish -c "set pbr rule priority 1002 action table deftable "
 clish -c "set pbr rule priority 1003 match from 6.5.4.3/24 "
 clish -c "set pbr rule priority 1003 action table deftable "
-cat > /tmp/dbedit_cmd_list << END
-create network_object_group g-server-list
-create host_plain h-001.002.003.004
-modify network_objects h-001.002.003.004 ipaddr 1.2.3.4
-update network_objects h-001.002.003.004
-addelement network_objects g-server-list '' network_objects:h-001.002.003.004
-create network n-002.003.004.000_23
-modify network_objects n-002.003.004.000_23 ipaddr 2.3.4.0
-modify network_objects n-002.003.004.000_23 netmask 255.255.254.0
-update network_objects n-002.003.004.000_23
-addelement network_objects g-server-list '' network_objects:n-002.003.004.000_23
-create network n-003.004.004.000_22
-modify network_objects n-003.004.004.000_22 ipaddr 3.4.4.0
-modify network_objects n-003.004.004.000_22 netmask 255.255.252.0
-update network_objects n-003.004.004.000_22
-addelement network_objects g-server-list '' network_objects:n-003.004.004.000_22
-create network n-006.005.004.000_24
-modify network_objects n-006.005.004.000_24 ipaddr 6.5.4.0
-modify network_objects n-006.005.004.000_24 netmask 255.255.255.0
-update network_objects n-006.005.004.000_24
-addelement network_objects g-server-list '' network_objects:n-006.005.004.000_24
-update network_objects g-server-list
-END
-#dbedit -local -ignore_script_failure -continue_updating -f /tmp/dbedit_cmd_list
+echo -e "create network_object_group g-server-list\nupdate_all\n-q\n" | dbedit -local
+echo -e "create host_plain h-001.002.003.004\nupdate_all\n-q\n" | dbedit -local
+echo -e "modify network_objects h-001.002.003.004 ipaddr 1.2.3.4\nupdate_all\n-q\n" | dbedit -local
+echo -e "addelement network_objects g-server-list '' network_objects:h-001.002.003.004\nupdate_all\n-q\n" | dbedit -local
+echo -e "create network n-002.003.004.000_23\nupdate_all\n-q\n" | dbedit -local
+echo -e "modify network_objects n-002.003.004.000_23 ipaddr 2.3.4.0\nmodify network_objects n-002.003.004.000_23 netmask 255.255.254.0\nupdate_all\n-q\n" | dbedit -local
+echo -e "addelement network_objects g-server-list '' network_objects:n-002.003.004.000_23\nupdate_all\n-q\n" | dbedit -local
+echo -e "create network n-003.004.004.000_22\nupdate_all\n-q\n" | dbedit -local
+echo -e "modify network_objects n-003.004.004.000_22 ipaddr 3.4.4.0\nmodify network_objects n-003.004.004.000_22 netmask 255.255.252.0\nupdate_all\n-q\n" | dbedit -local
+echo -e "addelement network_objects g-server-list '' network_objects:n-003.004.004.000_22\nupdate_all\n-q\n" | dbedit -local
+echo -e "create network n-006.005.004.000_24\nupdate_all\n-q\n" | dbedit -local
+echo -e "modify network_objects n-006.005.004.000_24 ipaddr 6.5.4.0\nmodify network_objects n-006.005.004.000_24 netmask 255.255.255.0\nupdate_all\n-q\n" | dbedit -local
+echo -e "addelement network_objects g-server-list '' network_objects:n-006.005.004.000_24\nupdate_all\n-q\n" | dbedit -local
+
 ```
 
-The dbedit line is commented out in the output by default. Please make a revision of the database first.
+Make a revision of the database first!
