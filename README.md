@@ -5,7 +5,7 @@ Various tools to work with CheckPoint firewall
 
 * [cpconf2pbr.py](https://github.com/AlekzNet/CheckPoint-toolkit/blob/master/doc/cpconf2pbr.md) - create CheckPoint GAIA PBR rules and local exceptions
 * nopbr.sh - PBR tables and rules removal for CheckPoint GAIA 
-* fw_stat_ip_list.sh - shows statistics of the allowed traffic related to specified IP-addresses
+* fw_stat_ip_list.sh - shows statistics of the allowed traffic related to specified source IP-addresses
 * fw_stat_ip_list_10min.sh - same as above, but for every 10min
 * cparse.sh - parses objects.C and shows firewall objects in the form of `name (IP-address) (IP-address) ...`
 * logex.sh - convert CheckPoint firewall logs to gzipped text
