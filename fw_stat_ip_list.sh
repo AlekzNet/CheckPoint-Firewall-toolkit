@@ -1,14 +1,25 @@
 #!/bin/bash
+date
+# Firewall names to check
+#FIREWALLS="segotfcskf sgsinfcskf"
+FIREWALLS="."
+
+# Additional strng to look for
+#NEEDLE1=255.255.255.255
+
 
 
 # There must be at least two arguments:
 # 1- file with a list of IP-addresses to search for
 # 2- CheckPoint log file converted to text
 
-if [[  $# < 2 ]]; then
-	echo "Usage: $0 ip_list_file cp_firewall_log-1.txt cp_firewall_log-2.txt ..."
-	exit 1
+if ((  $# < 2 )); then
+        echo "Usage: $0 ip_list_file cp_firewall_log-1.txt cp_firewall_log-2.txt ..."
+        exit 1
 fi
+
+# Output file name
+OUTFILE="fwstat_$1_`date +'%Y%m%d_%H%M'`.log"
 
 # The format of the CheckPoint log file must conform the following format
 # 2 - date
@@ -21,57 +32,96 @@ fi
 
 HEADER="num;date;time;src;dst;proto;service;action"
 
-
 # Convert the list of IP addresses from the file in the 1st argument 
 # to the following format:
 # 1\.2\.3\.4|7\.6\.5\.4
-
+# Replace newlines, spaces and tabs with pipes
+# Escape dots with backslashes
 iplist=`cat $1 | tr -s '\n\t ' '|' | sed -e 's/|$//' -e 's/^|//' -e 's/\./\\\./g'`
 echo $iplist
 shift
-exit
 
+
+echo "Being saved to $OUTFILE"
+
+
+files=""
 for file in $*
 do
+        if ( ! zcat $file | head -1 | fgrep $HEADER > /dev/null 2>&1 ); then
+                echo "$file - wrong file format"
+                continue
+        else
+                echo "$file - good file"
+                files=$files" "$file
+        fi
+done
+echo $files
 
-# Check if the header is correct
+for fw in $FIREWALLS
+do
+        echo "==================== $fw ==========================="
+        zcat $files | egrep -v "drop|reject|control" | fgrep -v ";udp;123;" | fgrep -v icmp | egrep "$iplist" | awk -F\; '
+                # TMPFILE - temporary file will be overwritten
+                # min - the threshhold for amount of connectins to be shown in the report
+                BEGIN { min=0; TMPFILE="/tmp/fw_stat_ip_list_top_tmp.tmp";system("echo \  >" TMPFILE);}
+                        { 
+                                # Counting either sources (4) or destinations (5)
+                                if ( $4 ~ "'$iplist'" ) {
+                                        src[$4]++;
+                                        service=$6 "-" $7;
+                                        srv[service]++;
+                                        ipservice=$5 ":" service;
+                                        pair[ipservice]++;
+                                        connection=$4 " -> " $5 ":" service;
+                                        conn[connection]++
+                                }
+                        }
+                END {
 
-	if ( ! head -1 $file | fgrep $HEADER > /dev/null 2>&1 ); then
-		echo "$file - wrong file format"
-		continue
-	else
-		echo "$file - good file"
-		cat $file | fgrep -v $HEADER | egrep "$iplist" | egrep -v "drop|reject|control"  | awk -F\; '
-# "min" sets the minimum amount of connectins/log entries		
-		BEGIN { date="_"; time="_"; total=0; min=0; TMPFILE="/tmp/fwstat.tmp";}
-		{
-			curtime=gensub("^([0-9][0-9]:[0-9]).*","\\1","g",$3);
-			if ( curtime == $3 ) curtime=gensub("^([0-9]:[0-9]).*","0\\1","g",$3);
-#			print curtime;
-			if ( date == "_") date = $2;
-			if ( time == "_") time = curtime;
-			if ( date != $2 || time != curtime) {
-				print date, time "0", "total=", total,"=========="
-				for (i in conn) {
-					if (conn[i] > min ) print conn[i], i >> TMPFILE;
-				}
-				fflush();
-				system("sort -rn " TMPFILE "| head -20");
-				system("echo \  >" TMPFILE);
-				date=$2; 
-				time=curtime;
-				delete conn;
-# Counting either sources (4) or destinations (5)
-				conn[$4]++;
-				total=1;
-			}
-			else {
-# Counting either sources (4) or destinations (5)				
-				conn[$4]++;
-				total++;
+                        print "====================  sources ==========================="
+                        for ( i in src) {
+                                if (src[i] >= min) print src[i],i >> TMPFILE;
+                        }
+                        fflush();
+                        # Only the top 100. Change the "head" argument if needed
+#                       system("sort -rn " TMPFILE "| head -100");
+                        system("sort -rn " TMPFILE);
+                        system("echo \  >" TMPFILE);
 
-			}
-		}'
-	fi
-done   
 
+                        print "====================  services ==========================="
+                        for ( i in srv) {
+                                print srv[i],i >> TMPFILE;
+                        }
+                        fflush();
+                        # Only the top 100. Change the "head" argument if needed
+#                       system("sort -rn " TMPFILE "| head -100");
+                        system("sort -rn " TMPFILE );
+                        system("echo \  >" TMPFILE);
+
+
+                        print "====================  destination-services ==========================="
+                        for ( i in pair) {
+                                if (pair[i] >= min) print pair[i],i >> TMPFILE;
+                        }
+                        fflush();
+                        # Only the top 100. Change the "head" argument if needed
+#                       system("sort -rn " TMPFILE "| head -100");
+                        system("sort -rn " TMPFILE);
+                        system("echo \  >" TMPFILE);
+
+                        print "==================== sources-destination-services ==========================="
+                        for ( i in conn) {
+                                if (conn[i] >= min) print conn[i],i >> TMPFILE;
+                        }
+                        fflush();
+                        # Only the top 100. Change the "head" argument if needed
+#                       system("sort -rn " TMPFILE "| head -100");
+                        system("sort -rn " TMPFILE);
+                        system("echo \  >" TMPFILE);
+                        }' 
+done > $OUTFILE
+
+echo "Saved to $OUTFILE"
+date
