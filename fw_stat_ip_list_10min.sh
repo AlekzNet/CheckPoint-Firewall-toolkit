@@ -31,18 +31,17 @@ iplist=`cat $1 | tr -s '\n\t ' '|' | sed -e 's/|$//' -e 's/^|//' -e 's/\./\\\./g
 echo $iplist
 shift
 
-
 for file in $*
 do
 
 # Check if the header is correct
 
-	if ( ! head -1 $file | fgrep $HEADER > /dev/null 2>&1 ); then
+	if ( ! zcat $file | head -1 | fgrep $HEADER > /dev/null 2>&1 ); then
 		echo "$file - wrong file format"
 		continue
 	else
 		echo "$file - good file"
-		cat $file | fgrep -v $HEADER | egrep "$iplist" | egrep -v "drop|reject|control"  | awk -F\; '
+		zcat $file | fgrep -v $HEADER | egrep "$iplist" | egrep -v "drop|reject|control"  | awk -F\; '
 # "min" sets the minimum amount of connectins/log entries		
 		BEGIN { date="_"; time="_"; total=0; min=0; TMPFILE="/tmp/fwstat.tmp";}
 		{
