@@ -10,9 +10,18 @@ clock
 OUTDIR=/var/log/2019.txt
 FWLOGDIR=$FWDIR/log
 
-for i in ${FWLOGDIR}/${*}*.log
+LOGFILES=""
+for i in $*
+do
+        LOGFILES="$LOGFILES  ${FWLOGDIR}/${i}*.log"
+done
+
+echo $LOGFILES
+
+for i in $LOGFILES
 do 
-echo $i
-fwm logexport -n -p -i $i |  gzip -c - > ${OUTDIR}/$i.txt.gz
+        echo $i
+        out=`echo $i | sed -e 's%.*/%%g'`
+        fwm logexport -n -p -i $i |  gzip -c - > ${OUTDIR}/$out.txt.gz
 done
 clock
