@@ -19,6 +19,8 @@ See the explanation here: https://www.alekz.net/archives/1480
 
 ### logex.sh
 
+Logex .sh converts CheckPoint firewall logs to gzipped text
+
 Create `/etc/fw/conf/logexport.ini`
 ```txt
 [Fields_Info]
