@@ -477,7 +477,8 @@ class R77(FW):
 			debug("fw_netobj_print  -- obj",3)
 			debug(obj,3)
 			if not 'any' in obj:
-				if self.ishost(netaddr.IPNetwork(re.sub(' ','/',obj))):
+				ip,mask=obj.split()
+				if '255.255.255.255' in mask:
 					print self.dbedit_wrap("create host_plain %s" % netobj[obj])
 					print self.dbedit_wrap("modify network_objects {0!s} ipaddr {1!s}".format(netobj[obj],obj.split()[0]))
 				else:
@@ -485,6 +486,32 @@ class R77(FW):
 					ip,mask=obj.split()
 					print self.dbedit_wrap("modify network_objects {0!s} ipaddr {1!s}\\nmodify network_objects {0!s} netmask {2!s}".format(netobj[obj],ip,mask))
 				
+
+	def fw_srvobj_print(self,srvobj):
+		for obj in srvobj:
+			debug("fw_srvobj_print  -- obj",3)
+			debug(obj,3)
+			if not '*' in obj:
+				# For some reason the following construction does not work
+				# proto,ports = obj.split(':') if ':' in obj else obj,''
+				if ':' in obj:	proto,ports = obj.split(':')
+				else: proto,ports = obj,''
+				
+				if 'udp' in proto or 'tcp' in proto:
+					print self.dbedit_wrap("create {0!s}_service {1!s}".format(proto,srvobj[obj]))
+					print self.dbedit_wrap("modify services {0!s} port {1!s}".format(srvobj[obj],ports))
+				elif 'icmp' in proto:
+					print ''
+					if ports:
+						print '' + ports
+				elif 'ip' in proto:
+					if ports:
+						print ' '
+						print ' ' + ports
+				else:
+					print '  '
+					print '   ' + proto
+
 
 class Policy(PRule):
 	'Class for the whole policy'
