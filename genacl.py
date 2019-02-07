@@ -73,7 +73,7 @@ class PRule:
 # addr = IP/mask
 # return = 1.2.3.4 255.255.255.255
 	def cidr2str(self,addr):
-		debug("cidr2str -- addr = %s" % addr,4)
+#		debug("cidr2str -- addr = %s" % addr,4)
 		tmp = netaddr.IPNetwork(addr)
 		return ' '.join([str(tmp.ip),str(tmp.netmask)])		
 		
@@ -86,8 +86,8 @@ class PRule:
 # arr -- takes a list, extracts the next address(es), removes the elements from the list
 # returns a list of addresses
 	def parse_addr(self,arr):
-		debug("parse_addr -- arr", 3)
-		debug(arr,4)
+#		debug("parse_addr -- arr", 3)
+#		debug(arr,4)
 		if 'any' in  arr[0]:
 			addr=['any']
 			del arr[0]
@@ -105,7 +105,7 @@ class PRule:
 			addr = [self.cidr2str(x) for x in arr[0].split(',')]
 			addr.sort()
 			del arr[0]
-		debug("parse_addr - addr = %s" % addr,3)
+#		debug("parse_addr - addr = %s" % addr,3)
 		return addr
 
 # used when inly the source or destination IP-addresses are used in the line
@@ -130,12 +130,12 @@ class PRule:
 
 		# Get the first address
 		addr1=self.parse_addr(arr)
-		debug("addr1 is %s" % addr1,3)
+#		debug("addr1 is %s" % addr1,3)
 		self.check_arr(arr)
 
 		if self.re_dig.match(arr[0]) or 'any' in arr[0] or 'host' in arr[0]:
 			addr2=self.parse_addr(arr)
-			debug("addr2 is %s" % addr2,3)
+#			debug("addr2 is %s" % addr2,3)
 			self.check_arr(arr)
 
 		if not ',' in arr[0]:
@@ -166,8 +166,6 @@ class PRule:
 		debug("Action = %s" % self.action,3)
 		debug("Comment = %s" % self.comment,3)
 		
-	
-
 class FW():
 	'General Firewall Class'
 	devtype='' 				# Device type
@@ -363,7 +361,6 @@ class FGT(FW):
 				print ' next'
 		print 'end'
 
-
 class ASA(FW):
 	'ASA specific class'
 	devtype='asa'
@@ -459,9 +456,6 @@ class ASA(FW):
 		else:
 			return ''
 
-
-
-
 class R77(FW):
 	'CheckPoint R77 specific class'
 	
@@ -476,9 +470,21 @@ class R77(FW):
 # Gets a (str) line and wraps it in 
 # 'echo -e ' line '\nupdate_all\\n-q\\n" | dbedit -local'
 	def dbedit_wrap(self, line):
-		return 'echo -e ' + line + '\nupdate_all\\n-q\\n" | dbedit -local'
+		return 'echo -e \"' + line + '\\nupdate_all\\n-q\\n" | dbedit -local'
 		
-	
+	def fw_netobj_print(self,netobj):		
+		for obj in netobj:
+			debug("fw_netobj_print  -- obj",3)
+			debug(obj,3)
+			if not 'any' in obj:
+				if self.ishost(netaddr.IPNetwork(re.sub(' ','/',obj))):
+					print self.dbedit_wrap("create host_plain %s" % netobj[obj])
+					print self.dbedit_wrap("modify network_objects {0!s} ipaddr {1!s}".format(netobj[obj],obj.split()[0]))
+				else:
+					print self.dbedit_wrap("create network %s" % netobj[obj])
+					ip,mask=obj.split()
+					print self.dbedit_wrap("modify network_objects {0!s} ipaddr {1!s}\\nmodify network_objects {0!s} netmask {2!s}".format(netobj[obj],ip,mask))
+				
 
 class Policy(PRule):
 	'Class for the whole policy'
