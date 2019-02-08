@@ -10,6 +10,8 @@ Various tools to work with CheckPoint firewall
 * fw_stat_ip_list_10min.sh - same as above, but for every 10min
 * cparse.sh - parses objects.C and shows firewall objects in the form of `name (IP-address) (IP-address) ...`
 * logex.sh - convert CheckPoint firewall logs to gzipped text
+* sem_parse.awk - AWK script to parse $FWCONF/conf/sem_objects.C and generate a list of default services
+* sem_parse_posix.sh - same as above, but it's compatible POSIX AWK (CheckPoint AWK is very old and does not support GNU extensions)
 
 For both fw_stat_ip_list.sh and fw_stat_ip_list_10min.sh, the CheckPointlogs should be converted to TXT (e.g. using logex.sh) using the following format:
 
