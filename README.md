@@ -12,6 +12,8 @@ Various tools to work with CheckPoint firewall
 * logex.sh - convert CheckPoint firewall logs to gzipped text
 * sem_parse.awk - AWK script to parse $FWCONF/conf/sem_objects.C and generate a list of default services
 * sem_parse_posix.sh - same as above, but it's compatible POSIX AWK (CheckPoint AWK is very old and does not support GNU extensions)
+* CParser.py - converts a CheckPoint .C file into a pthon list
+* genacl.py - generates dbedit commands to update CheckPoint objects and policy (rule generation is not completed yet)
 
 For both fw_stat_ip_list.sh and fw_stat_ip_list_10min.sh, the CheckPointlogs should be converted to TXT (e.g. using logex.sh) using the following format:
 
