@@ -68,6 +68,9 @@ def print_pbr_iface(iface, ip, mask):
 def print_pbr_route(ip, gw):
 	global cur_rtprio, table_prio
 	table = tname(ip)
+	print 50*'#'
+	print "Run these commands on the firewall"
+	print 50*'#'
 	if args.noclish:	
 		print "set pbr table", table, "static-route", ip, "nexthop gateway address", gw, "priority", table_prio
 		print "set pbr rule priority", cur_rtprio, "match to", ip
@@ -80,6 +83,9 @@ def print_pbr_route(ip, gw):
 	
 def print_pbr_list(ip,table):
 	global cur_listprio, direction
+	print 50*'#'
+	print "Run these commands on the firewall"
+	print 50*'#'
 	if args.noclish:
 		print "set pbr rule priority", cur_listprio, "match", direction, str(ip)
 		print "set pbr rule priority", cur_listprio, "action table", table
@@ -136,6 +142,9 @@ def ishost(ip):
 # ip_list - list netaddr objects
 # group - name of the CheckPoint firewall group to add the IP-addresses to
 def print_dbedit_cmds(ip_list,group):
+	print 50*'#'
+	print "Run these commands on the management station"
+	print 50*'#'
 	print 'echo -e "create network_object_group',group+'\\nupdate_all\\n-q\\n" | dbedit -local'
 	for ip in ip_list:
 		name=net2name(ip)
