@@ -68,9 +68,6 @@ def print_pbr_iface(iface, ip, mask):
 def print_pbr_route(ip, gw):
 	global cur_rtprio, table_prio
 	table = tname(ip)
-	print 50*'#'
-	print "Run these commands on the firewall"
-	print 50*'#'
 	if args.noclish:	
 		print "set pbr table", table, "static-route", ip, "nexthop gateway address", gw, "priority", table_prio
 		print "set pbr rule priority", cur_rtprio, "match to", ip
@@ -83,9 +80,6 @@ def print_pbr_route(ip, gw):
 	
 def print_pbr_list(ip,table):
 	global cur_listprio, direction
-	print 50*'#'
-	print "Run these commands on the firewall"
-	print 50*'#'
 	if args.noclish:
 		print "set pbr rule priority", cur_listprio, "match", direction, str(ip)
 		print "set pbr rule priority", cur_listprio, "action table", table
@@ -138,27 +132,32 @@ def octet2txt(octet):
 # ip is a netaddr object
 def ishost(ip):
 	return True if ip.prefixlen == 32 else False
+
+# Gets a (str) line and wraps it in 
+# 'echo -e ' line '\nupdate_all\\n-q\\n" | dbedit -local'
+def dbedit(line):
+	print 'echo -e \"' + line + '\\nupdate_all\\n-q\\n" | dbedit -local'
+
+def banner(line):
+	repeat=80
+	print repeat*'#'
+	print "#",line
+	print repeat*'#'
 	
 # ip_list - list netaddr objects
 # group - name of the CheckPoint firewall group to add the IP-addresses to
 def print_dbedit_cmds(ip_list,group):
-	print 50*'#'
-	print "Run these commands on the management station"
-	print 50*'#'
-	print 'echo -e "create network_object_group',group+'\\nupdate_all\\n-q\\n" | dbedit -local'
+	banner("Run these commands on the management station (make a DB backup first!)")
 	for ip in ip_list:
 		name=net2name(ip)
 		if ishost(ip):
-			print 'echo -e "create host_plain',name+'\\nupdate_all\\n-q\\n" | dbedit -local'
-			print 'echo -e "modify network_objects',name,'ipaddr',str(ip.network)+'\\nupdate_all\\n-q\\n" | dbedit -local'
-
+			dbedit("create host_plain {0!s}".format(name))
+			dbedit("modify network_objects {0!s} ipaddr {1!s}".format(name,str(ip.network)))
 		else:
-			print 'echo -e "create network',name+'\\nupdate_all\\n-q\\n" | dbedit -local'
-			print 'echo -e "modify network_objects',name,'ipaddr',str(ip.network)+'\\nmodify network_objects',name,'netmask',str(ip.netmask)+'\\nupdate_all\\n-q\\n" | dbedit -local'
-#		print "update network_objects",name
-		print 'echo -e "addelement network_objects',group,'\'\' network_objects:' + name+'\\nupdate_all\\n-q\\n" | dbedit -local'
-#	print "update network_objects",group
-#	print "#dbedit -local -ignore_script_failure -continue_updating -f /tmp/dbedit_cmd_list"
+			dbedit("create network %s" % name)
+			dbedit("modify network_objects {0!s} ipaddr {1!s}\\nmodify network_objects {0!s} netmask {2!s}".format(name,str(ip.network),str(ip.netmask)))
+		dbedit("addelement network_objects {0!s} \'\' network_objects:{1!s}".format(group,name)) 
+
 	
 parser = argparse.ArgumentParser()
 parser.add_argument('conf', default="-", nargs='?', help="Filename with a list of IP addresses, CheckPoint gateway conf filename, produced by \nclish -c 'show configuration' \nor \"-\" to read from the console (default)")
@@ -231,6 +230,7 @@ else:
 		print >>sys.stderr, 'ERROR: Can\'t open file', args.conf
 		sys.exit(1)
 
+banner("Run these commands on the firewall(s)")
 # If a list of IP-addresses is provided:
 if args.list:
 	for line in f:
