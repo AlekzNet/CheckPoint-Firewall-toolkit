@@ -471,10 +471,10 @@ class R77(FW):
 	anyservice="globals:Any"
 	action={"permit": "accept_action:accept", "deny": "drop_action:drop"}
 	
-	def __init__(self, policy='test',rulenum=1000, label='', log=False, comment='', mg=0):
+	def __init__(self, policy='test', log=False, comment="", mg=0):
 		self.policy = policy	# policy name
-		self.rulenum=rulenum 	# begin with this rulenumber: edit rulenum
-		self.label=label		# section label
+#		self.rulenum=rulenum 	# begin with this rulenumber: edit rulenum
+#		self.label=label		# section label
 		self.log = log
 		self.comment = comment
 		self.mingrp=mg
@@ -531,27 +531,24 @@ class R77(FW):
 			if "comment" in rule.type: 
 				self.label = rule.comment
 				next
-			dbline = "addelement fw_policies ##{0!s} rule security rule\\n".format(self.policy)
-			dbline += "addelement fw_policies ##{0!s} rule:{1}:action {2!s}\\n".format(self.policy,rule.num,self.action[rule.action])
-			dbline += "modify fw_policies ##{0!s} rule:{1}:comments \"{2!s}\"\\n".format(self.policy,rule.num,rule.comment)
-			dbline += "modify fw_policies ##{0!s} rule:{1}:name \"\"\\n".format(self.policy,rule.num)
-			print '  set srcaddr ' + ' '.join(map(lambda x: policy.netobj[x], rule.src))
-			print '  set dstaddr ' + ' '.join(map(lambda x: policy.netobj[x], rule.dst))
-			print '  set service ' + ' '.join(map(lambda x: policy.srvobj[x], rule.srv))
+			dbline = "addelement fw_policies ##{0!s} rule security_rule\\n\ \n".format(self.policy)
+			dbline += "addelement fw_policies ##{0!s} rule:{1}:action {2!s}\\n \n".format(self.policy,rule.num,self.action[rule.action])
+			dbline += "modify fw_policies ##{0!s} rule:{1}:comments \"{2!s}\"\\n\ \n".format(self.policy,rule.num,rule.comment)
+			dbline += "modify fw_policies ##{0!s} rule:{1}:name \"\"\\n\ \n".format(self.policy,rule.num)
+			for ip in rule.src:
+				dbline += "addelement fw_policies ##{0!s} rule:{1}:src:\'\' network_objects:\"{2!s}\"\\n\ \n".format(self.policy,rule.num,policy.netobj[ip])
+			for ip in rule.dst:
+				dbline += "addelement fw_policies ##{0!s} rule:{1}:dst:\'\' network_objects:\"{2!s}\"\\n\ \n".format(self.policy,rule.num,policy.netobj[ip])		
+			for srv in rule.srv:
+				dbline += "addelement fw_policies ##{0!s} rule:{1}:services:\'\' services:\"{2!s}\"\\n\ \n".format(self.policy,rule.num,policy.srvobj[srv])	
 
-			if 'permit' in rule.action:
-				print '  set action accept'
-			else:
-				print '  set action deny'
-			if self.label:
-				print '  set global-label "' + self.label + '"'
 			if self.log:
 				if type(self.log) is string and "disable" in self.log:
-					print '  set logtraffic disable'
+					dbline += "modify fw_policies ##{0!s} rule:{1}:track {2!s}\"\"\\n\ \n".format(self.policy,rule.num,"tracks:None")
 				else:
-					print '  set logtraffic all'
+					dbline += "modify fw_policies ##{0!s} rule:{1}:track {2!s}\"\"\\n\ \n".format(self.policy,rule.num,"tracks:Log")
 			if self.comment or rule.comment:
-				print '  set comments "'+ self.comment + ' ' + rule.comment + '"'
+				dbline += "modify fw_policies ##{0!s} rule:{1}:comments \"{2!s}\"\\n\ \n".format(self.policy,rule.num,rule.comment)
 			self.dbedit(dbline)
 			dbline=""
 
@@ -642,6 +639,7 @@ elif 'fgt' in args.dev:
 	if args.nolog: args.log = "disable"
 	dev=FGT(args.vdom, args.si, args.di, args.label, args.log, args.comment)
 elif 'r77' in args.dev:
+	if args.nolog: args.log = "disable"
 	dev=R77(args.policy, args.log, args.comment)
 else:
 	print >>sys.stderr, dev, "is not supported. It should be: asa (Cisco ASA), fgt (FortiGate) or r77 (CheckPOint R77)"
