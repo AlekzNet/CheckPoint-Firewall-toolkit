@@ -136,6 +136,10 @@ cpconf2pbr.py --list --src --table deftable --fw --group g-server-list testpbrli
 Result:
 
 ```txt
+################################################################################
+# Run these commands on the firewall(s)
+# First, save the config with clish -c "show configuration" > firewall.date.conf. 
+################################################################################
 clish -c "set pbr rule priority 1000 match from 1.2.3.4/32"
 clish -c "set pbr rule priority 1000 action table deftable"
 clish -c "set pbr rule priority 1001 match from 2.3.4.0/23"
@@ -144,6 +148,12 @@ clish -c "set pbr rule priority 1002 match from 3.4.5.0/22"
 clish -c "set pbr rule priority 1002 action table deftable"
 clish -c "set pbr rule priority 1003 match from 6.5.4.3/24"
 clish -c "set pbr rule priority 1003 action table deftable"
+################################################################################
+# After tested OK, save the config with: clish, save config
+################################################################################
+################################################################################
+# Make a DB backup, then run these commands on the management station
+################################################################################
 echo -e "create network_object_group g-server-list\nupdate_all\n-q\n" | dbedit -local
 echo -e "create host_plain h-001.002.003.004\nupdate_all\n-q\n" | dbedit -local
 echo -e "modify network_objects h-001.002.003.004 ipaddr 1.2.3.4\nupdate_all\n-q\n" | dbedit -local
@@ -157,6 +167,9 @@ echo -e "addelement network_objects g-server-list '' network_objects:n-003.004.0
 echo -e "create network n-006.005.004.000_24\nupdate_all\n-q\n" | dbedit -local
 echo -e "modify network_objects n-006.005.004.000_24 ipaddr 6.5.4.0\nmodify network_objects n-006.005.004.000_24 netmask 255.255.255.0\nupdate_all\n-q\n" | dbedit -local
 echo -e "addelement network_objects g-server-list '' network_objects:n-006.005.004.000_24\nupdate_all\n-q\n" | dbedit -local
+################################################################################
+# Install the new policy
+################################################################################
 ```
 
 Clish and dbedit "decorations" can be removed by `--noclish` and `--nodbedit` correspondingly:
