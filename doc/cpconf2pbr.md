@@ -162,6 +162,8 @@ echo -e "addelement network_objects g-server-list '' network_objects:n-006.005.0
 Clish and dbedit "decorations" can be removed by `--noclish` and `--nodbedit` correspondingly:
 
 ```txt
+cpconf2pbr.py --list --src --table deftable --fw --group g-server-list --noclish --nodbedit testpbrlist.txt
+
 set pbr rule priority 1000 match from 1.2.3.4/32
 set pbr rule priority 1000 action table deftable
 . . .
