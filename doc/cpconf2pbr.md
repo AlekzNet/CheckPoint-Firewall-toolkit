@@ -11,14 +11,16 @@ and adds the IP-addresses from the list to the CP firewall configuration.
 ```txt
 usage: cpconf2pbr.py [-h] [--noclish] [--ifprio IFPRIO] [--rtprio RTPRIO]
                      [--ignore_if IGNORE_IF] [--ignore_ip IGNORE_IP] [--list]
-                     [--dst | --src] [--table TABLE] [--listprio LISTPRIO]
-                     [--fw] [--group GROUP]
+                     [--dst | --src] [--nodbedit] [--table TABLE]
+                     [--listprio LISTPRIO] [--fw] [--group GROUP]
                      [conf]
+
 positional arguments:
   conf                  Filename with a list of IP addresses, CheckPoint
                         gateway conf filename, produced by clish -c 'show
                         configuration' or "-" to read from the console
                         (default)
+
 optional arguments:
   -h, --help            show this help message and exit
   --noclish             Do not add "clish -c" construction
@@ -36,6 +38,7 @@ optional arguments:
                         config
   --dst                 The list contains the destination addresses
   --src                 The list contains the source addresses
+  --nodbedit            Do not add dbedit constructions
   --table TABLE         Table name, default = default
   --listprio LISTPRIO   The beginning priority of the PBR rules for the list
                         of servers, default=1000
@@ -79,12 +82,12 @@ cat config.txt | cpconf2pbr.py
 Result:
 
 ```txt
-clish -c "set pbr table tbond1o2 static-route 1.2.3.1/29 nexthop gateway logical bond1.2 priority 2 "
-clish -c "set pbr rule priority 10 match to 1.2.3.0/29 "
-clish -c "set pbr rule priority 10 action table tbond1o2 "
-clish -c "set pbr table t10o175o255o0m24 static-route 10.175.255.0/24 nexthop gateway address 163.157.255.129 priority 3 "
-clish -c "set pbr rule priority 100 match to 10.175.255.0/24 "
-clish -c "set pbr rule priority 100 action table t10o175o255o0m24 "
+clish -c "set pbr table tbond1o2 static-route 1.2.3.1/29 nexthop gateway logical bond1.2 priority 2"
+clish -c "set pbr rule priority 10 match to 1.2.3.0/29"
+clish -c "set pbr rule priority 10 action table tbond1o2"
+clish -c "set pbr table t10o175o255o0m24 static-route 10.175.255.0/24 nexthop gateway address 163.157.255.129 priority 3"
+clish -c "set pbr rule priority 100 match to 10.175.255.0/24"
+clish -c "set pbr rule priority 100 action table t10o175o255o0m24"
 ```
 
 
@@ -114,14 +117,14 @@ cpconf2pbr.py --list --src  --table deftable testpbrlist.txt
 Result:
 
 ```txt
-clish -c "set pbr rule priority 1000 match from 1.2.3.4/32 "
-clish -c "set pbr rule priority 1000 action table deftable "
-clish -c "set pbr rule priority 1001 match from 2.3.4.0/23 "
-clish -c "set pbr rule priority 1001 action table deftable "
-clish -c "set pbr rule priority 1002 match from 3.4.5.0/22 "
-clish -c "set pbr rule priority 1002 action table deftable "
-clish -c "set pbr rule priority 1003 match from 6.5.4.3/24 "
-clish -c "set pbr rule priority 1003 action table deftable "
+clish -c "set pbr rule priority 1000 match from 1.2.3.4/32"
+clish -c "set pbr rule priority 1000 action table deftable"
+clish -c "set pbr rule priority 1001 match from 2.3.4.0/23"
+clish -c "set pbr rule priority 1001 action table deftable"
+clish -c "set pbr rule priority 1002 match from 3.4.5.0/22"
+clish -c "set pbr rule priority 1002 action table deftable"
+clish -c "set pbr rule priority 1003 match from 6.5.4.3/24"
+clish -c "set pbr rule priority 1003 action table deftable"
 ```
 
 Command to create PBR rules and add the objects to the firewall group g-server-list:
@@ -133,14 +136,14 @@ cpconf2pbr.py --list --src --table deftable --fw --group g-server-list testpbrli
 Result:
 
 ```txt
-clish -c "set pbr rule priority 1000 match from 1.2.3.4/32 "
-clish -c "set pbr rule priority 1000 action table deftable "
-clish -c "set pbr rule priority 1001 match from 2.3.4.0/23 "
-clish -c "set pbr rule priority 1001 action table deftable "
-clish -c "set pbr rule priority 1002 match from 3.4.5.0/22 "
-clish -c "set pbr rule priority 1002 action table deftable "
-clish -c "set pbr rule priority 1003 match from 6.5.4.3/24 "
-clish -c "set pbr rule priority 1003 action table deftable "
+clish -c "set pbr rule priority 1000 match from 1.2.3.4/32"
+clish -c "set pbr rule priority 1000 action table deftable"
+clish -c "set pbr rule priority 1001 match from 2.3.4.0/23"
+clish -c "set pbr rule priority 1001 action table deftable"
+clish -c "set pbr rule priority 1002 match from 3.4.5.0/22"
+clish -c "set pbr rule priority 1002 action table deftable"
+clish -c "set pbr rule priority 1003 match from 6.5.4.3/24"
+clish -c "set pbr rule priority 1003 action table deftable"
 echo -e "create network_object_group g-server-list\nupdate_all\n-q\n" | dbedit -local
 echo -e "create host_plain h-001.002.003.004\nupdate_all\n-q\n" | dbedit -local
 echo -e "modify network_objects h-001.002.003.004 ipaddr 1.2.3.4\nupdate_all\n-q\n" | dbedit -local
@@ -154,7 +157,21 @@ echo -e "addelement network_objects g-server-list '' network_objects:n-003.004.0
 echo -e "create network n-006.005.004.000_24\nupdate_all\n-q\n" | dbedit -local
 echo -e "modify network_objects n-006.005.004.000_24 ipaddr 6.5.4.0\nmodify network_objects n-006.005.004.000_24 netmask 255.255.255.0\nupdate_all\n-q\n" | dbedit -local
 echo -e "addelement network_objects g-server-list '' network_objects:n-006.005.004.000_24\nupdate_all\n-q\n" | dbedit -local
-
 ```
 
-Make a revision of the database first!
+Clish and dbedit "decorations" can be removed by `--noclish` and `--nodbedit` correspondingly:
+
+```txt
+set pbr rule priority 1000 match from 1.2.3.4/32
+set pbr rule priority 1000 action table deftable
+. . .
+create network_object_group g-server-list
+create host_plain h-001.002.003.004
+. . .
+```
+
+Make a revision of the database and save config with:
+```sh
+clish -c "show configuration" > firewall.date.conf
+```
+in advance.
