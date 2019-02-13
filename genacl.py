@@ -471,18 +471,20 @@ class R77(FW):
 	anyservice="globals:Any"
 	action={"permit": "accept_action:accept", "deny": "drop_action:drop"}
 	
-	def __init__(self, policy='test', log=False, comment="", mg=0):
+	def __init__(self, policy='test', log=False, comment="", nodbedit=False, mg=0):
 		self.policy = policy	# policy name
-#		self.rulenum=rulenum 	# begin with this rulenumber: edit rulenum
+#		self.rulenum=rulenum 	# begin with this rule number: edit rulenum
 #		self.label=label		# section label
 		self.log = log
 		self.comment = comment
+		self.nodbedit=nodbedit
 		self.mingrp=mg
 
 # Gets a (str) line and wraps it in 
 # 'echo -e ' line '\nupdate_all\\n-q\\n" | dbedit -local'
 	def dbedit(self, line):
-		print 'echo -e \"' + line + '\\nupdate_all\\n-q\\n" | dbedit -local'
+		if self.nodbedit: print line
+		else: print 'echo -e \"' + line + '\\nupdate_all\\n-q\\n" | dbedit -local'
 		
 	def fw_netobj_print(self,netobj):		
 		for obj in netobj:
@@ -536,17 +538,17 @@ class R77(FW):
 			dbline += "modify fw_policies ##{0!s} rule:{1}:comments \"{2!s}\"\\n\ \n".format(self.policy,rule.num,rule.comment)
 			dbline += "modify fw_policies ##{0!s} rule:{1}:name \"\"\\n\ \n".format(self.policy,rule.num)
 			for ip in rule.src:
-				dbline += "addelement fw_policies ##{0!s} rule:{1}:src:\'\' network_objects:\"{2!s}\"\\n\ \n".format(self.policy,rule.num,policy.netobj[ip])
+				dbline += "addelement fw_policies ##{0!s} rule:{1}:src:\'\' network_objects:{2!s}\\n\ \n".format(self.policy,rule.num,policy.netobj[ip])
 			for ip in rule.dst:
-				dbline += "addelement fw_policies ##{0!s} rule:{1}:dst:\'\' network_objects:\"{2!s}\"\\n\ \n".format(self.policy,rule.num,policy.netobj[ip])		
+				dbline += "addelement fw_policies ##{0!s} rule:{1}:dst:\'\' network_objects:{2!s}\\n\ \n".format(self.policy,rule.num,policy.netobj[ip])		
 			for srv in rule.srv:
-				dbline += "addelement fw_policies ##{0!s} rule:{1}:services:\'\' services:\"{2!s}\"\\n\ \n".format(self.policy,rule.num,policy.srvobj[srv])	
+				dbline += "addelement fw_policies ##{0!s} rule:{1}:services:\'\' services:{2!s}\\n\ \n".format(self.policy,rule.num,policy.srvobj[srv])	
 
 			if self.log:
 				if type(self.log) is string and "disable" in self.log:
-					dbline += "modify fw_policies ##{0!s} rule:{1}:track {2!s}\"\"\\n\ \n".format(self.policy,rule.num,"tracks:None")
+					dbline += "modify fw_policies ##{0!s} rule:{1}:track {2!s}\\n\ \n".format(self.policy,rule.num,"tracks:None")
 				else:
-					dbline += "modify fw_policies ##{0!s} rule:{1}:track {2!s}\"\"\\n\ \n".format(self.policy,rule.num,"tracks:Log")
+					dbline += "modify fw_policies ##{0!s} rule:{1}:track {2!s}\\n\ \n".format(self.policy,rule.num,"tracks:Log")
 			if self.comment or rule.comment:
 				dbline += "modify fw_policies ##{0!s} rule:{1}:comments \"{2!s}\"\\n\ \n".format(self.policy,rule.num,rule.comment)
 			self.dbedit(dbline)
@@ -625,6 +627,7 @@ fgt.add_argument('--label', default='', help="Section label, Default - none")
 
 r77 = parser.add_argument_group('CheckPoint R77')
 r77.add_argument('--policy', default='test', help="CheckPoint policy name. 	Default - \"test\" ")
+parser.add_argument('--nodbedit', default=False, help="Do not add dbedit decorations", action="store_true")
 
 
 args = parser.parse_args()
