@@ -40,7 +40,7 @@ import string
 import argparse
 import re
 import sys
-import pprint
+
 try:
 	import netaddr
 except ImportError:
@@ -55,37 +55,24 @@ def print_pbr_iface(iface, ip, mask):
 	global cur_ifprio, table_prio
 	table = tname(iface)
 	addr=netaddr.IPNetwork(str(ip)+"/"+str(mask))
-	if args.noclish:
-		print "set pbr table", table, "static-route", str(addr.cidr), "nexthop gateway logical", iface, "priority", table_prio
-		print "set pbr rule priority", cur_ifprio, "match to", str(addr.cidr)
-		print "set pbr rule priority", cur_ifprio, "action table", table
-	else:
-		print "clish -c \"set pbr table", table, "static-route", str(addr.cidr), "nexthop gateway logical", iface, "priority", table_prio, "\""
-		print "clish -c \"set pbr rule priority", cur_ifprio, "match to", str(addr.cidr), "\""
-		print "clish -c \"set pbr rule priority", cur_ifprio, "action table", table, "\""
+	clish("set pbr table {0!s} static-route {1!s} nexthop gateway logical {2!s} priority {3}".format(table, str(addr.cidr), iface, table_prio))
+	clish("set pbr rule priority {0} match to {1!s}".format(cur_ifprio,str(addr.cidr)))
+	clish("set pbr rule priority {0} action table {1!s}".format(cur_ifprio, table))
+
 	cur_ifprio += 1
 
 def print_pbr_route(ip, gw):
 	global cur_rtprio, table_prio
 	table = tname(ip)
-	if args.noclish:	
-		print "set pbr table", table, "static-route", ip, "nexthop gateway address", gw, "priority", table_prio
-		print "set pbr rule priority", cur_rtprio, "match to", ip
-		print "set pbr rule priority", cur_rtprio, "action table", table
-	else:
-		print "clish -c \"set pbr table", table, "static-route", ip, "nexthop gateway address", gw, "priority", table_prio, "\""
-		print "clish -c \"set pbr rule priority", cur_rtprio, "match to", ip, "\""
-		print "clish -c \"set pbr rule priority", cur_rtprio, "action table", table, "\""	
+	clish("set pbr table {0!s} static-route {1!s} nexthop gateway address {2!s} priority {3}".format(table,ip,gw,table_prio))
+	clish("set pbr rule priority {0} match to {1!s}".format(cur_rtprio,ip))
+	clish("set pbr rule priority {0} action table {1!s}".format(cur_rtprio,table))
 	cur_rtprio += 1	
 	
 def print_pbr_list(ip,table):
 	global cur_listprio, direction
-	if args.noclish:
-		print "set pbr rule priority", cur_listprio, "match", direction, str(ip)
-		print "set pbr rule priority", cur_listprio, "action table", table
-	else:
-		print "clish -c \"set pbr rule priority", cur_listprio, "match", direction, str(ip), "\""
-		print "clish -c \"set pbr rule priority", cur_listprio, "action table", table, "\""		
+	clish("set pbr rule priority {0} match {1!s} {2!s}".format(cur_listprio,direction,str(ip)))
+	clish("set pbr rule priority {0} action table {1!s}".format(cur_listprio,table))
 	cur_listprio +=1
 
 # Takes a string, extracts IP-address and returns a netaddr object
@@ -133,21 +120,28 @@ def octet2txt(octet):
 def ishost(ip):
 	return True if ip.prefixlen == 32 else False
 
-# Gets a (str) line and wraps it in 
+# Gets a (str) line and (if no args.nodbedit set to True) wraps it in 
 # 'echo -e ' line '\nupdate_all\\n-q\\n" | dbedit -local'
 def dbedit(line):
-	print 'echo -e \"' + line + '\\nupdate_all\\n-q\\n" | dbedit -local'
+	if args.nodbedit: print line
+	else: print 'echo -e \"' + line + '\\nupdate_all\\n-q\\n" | dbedit -local'
 
+# Prints the line surrounded by hashes
 def banner(line):
 	repeat=80
 	print repeat*'#'
 	print "#",line
 	print repeat*'#'
+
+# Get a str(line), and wraps it in
+# clish -c " ... " if noclish=False
+def clish(line):
+	if args.noclish: print line
+	else: print 'clish -c \"' + line + " \""
 	
 # ip_list - list netaddr objects
 # group - name of the CheckPoint firewall group to add the IP-addresses to
 def print_dbedit_cmds(ip_list,group):
-	banner("Run these commands on the management station (make a DB backup first!)")
 	for ip in ip_list:
 		name=net2name(ip)
 		if ishost(ip):
@@ -170,6 +164,7 @@ parser.add_argument('--list', default=False, help="The input is a list of IP-add
 dir = parser.add_mutually_exclusive_group()
 dir.add_argument('--dst', default=False, help="The list contains the destination addresses", action="store_true")
 dir.add_argument('--src', default=False, help="The list contains the source addresses", action="store_true")
+parser.add_argument('--nodbedit', default=False, help="Do not add dbedit constructions", action="store_true")
 parser.add_argument('--table', default="default", help="Table name, default = default")
 parser.add_argument('--listprio', default=1000, type=int, help="The beginning priority of the PBR rules for the list of servers, default=1000")
 parser.add_argument('--fw', default=False, help="Create firewall commands to add the IP-addresses to the config", action="store_true")
@@ -230,7 +225,7 @@ else:
 		print >>sys.stderr, 'ERROR: Can\'t open file', args.conf
 		sys.exit(1)
 
-banner("Run these commands on the firewall(s)")
+banner('Run these commands on the firewall(s)\n# First, save the config with clish -c "show configuration" > firewall.date.conf. ')
 # If a list of IP-addresses is provided:
 if args.list:
 	for line in f:
@@ -260,7 +255,11 @@ else:
 # Checking if the line should be ignored		
 			if not re_ignore_ip.search(ip + " ") and not re_ignore_ip.search(gw + " "):
 				print_pbr_route(ip, gw)
+banner("After tested OK, save the config with: clish, save config")
 
 # If needed creating CheckPoint dbedit commands to add IP-addresses to the specified group
 if args.fw:
+	banner("Make a DB backup, then run these commands on the management station")
 	print_dbedit_cmds(ip_list,args.group)
+	banner("Install the new policy")
+	
