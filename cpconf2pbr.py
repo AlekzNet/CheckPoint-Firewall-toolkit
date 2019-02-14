@@ -59,7 +59,6 @@ def print_pbr_iface(iface, ip, mask):
 	clish("set pbr table {0!s} static-route {1!s} nexthop gateway logical {2!s} priority {3}".format(table, str(addr.cidr), iface, table_prio))
 	clish("set pbr rule priority {0} match to {1!s}".format(cur_ifprio,str(addr.cidr)))
 	clish("set pbr rule priority {0} action table {1!s}".format(cur_ifprio, table))
-
 	cur_ifprio += 1
 
 def print_pbr_route(ip, gw):
