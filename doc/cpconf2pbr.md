@@ -82,12 +82,14 @@ cat config.txt | cpconf2pbr.py
 Result:
 
 ```txt
+clish -c "show configuration" > ~/firewall_clish_before.20190214_0233.conf
 clish -c "set pbr table tbond1o2 static-route 1.2.3.1/29 nexthop gateway logical bond1.2 priority 2"
 clish -c "set pbr rule priority 10 match to 1.2.3.0/29"
 clish -c "set pbr rule priority 10 action table tbond1o2"
 clish -c "set pbr table t10o175o255o0m24 static-route 10.175.255.0/24 nexthop gateway address 163.157.255.129 priority 3"
 clish -c "set pbr rule priority 100 match to 10.175.255.0/24"
 clish -c "set pbr rule priority 100 action table t10o175o255o0m24"
+clish -c "show configuration" > ~/firewall_clish_after.20190214_0233.conf
 ```
 
 
@@ -117,6 +119,7 @@ cpconf2pbr.py --list --src  --table deftable testpbrlist.txt
 Result:
 
 ```txt
+clish -c "show configuration" > ~/firewall_clish_before.20190214_0233.conf
 clish -c "set pbr rule priority 1000 match from 1.2.3.4/32"
 clish -c "set pbr rule priority 1000 action table deftable"
 clish -c "set pbr rule priority 1001 match from 2.3.4.0/23"
@@ -125,6 +128,7 @@ clish -c "set pbr rule priority 1002 match from 3.4.5.0/22"
 clish -c "set pbr rule priority 1002 action table deftable"
 clish -c "set pbr rule priority 1003 match from 6.5.4.3/24"
 clish -c "set pbr rule priority 1003 action table deftable"
+clish -c "show configuration" > ~/firewall_clish_after.20190214_0233.conf
 ```
 
 Command to create PBR rules and add the objects to the firewall group g-server-list:
@@ -138,8 +142,8 @@ Result:
 ```txt
 ################################################################################
 # Run these commands on the firewall(s)
-# First, save the config with clish -c "show configuration" > firewall.date.conf. 
 ################################################################################
+clish -c "show configuration" > ~/firewall_clish_before.20190214_0233.conf
 clish -c "set pbr rule priority 1000 match from 1.2.3.4/32"
 clish -c "set pbr rule priority 1000 action table deftable"
 clish -c "set pbr rule priority 1001 match from 2.3.4.0/23"
@@ -148,6 +152,7 @@ clish -c "set pbr rule priority 1002 match from 3.4.5.0/22"
 clish -c "set pbr rule priority 1002 action table deftable"
 clish -c "set pbr rule priority 1003 match from 6.5.4.3/24"
 clish -c "set pbr rule priority 1003 action table deftable"
+clish -c "show configuration" > ~/firewall_clish_after.20190214_0233.conf
 ################################################################################
 # After tested OK, save the config with: clish, save config
 ################################################################################
