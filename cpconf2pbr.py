@@ -40,6 +40,7 @@ import string
 import argparse
 import re
 import sys
+import datetime
 
 try:
 	import netaddr
@@ -128,7 +129,7 @@ def dbedit(line):
 
 # Prints the line surrounded by hashes
 def banner(line):
-	repeat=80
+	repeat=90
 	print repeat*'#'
 	print "#",line
 	print repeat*'#'
@@ -155,7 +156,7 @@ def print_dbedit_cmds(ip_list,group):
 	
 parser = argparse.ArgumentParser()
 parser.add_argument('conf', default="-", nargs='?', help="Filename with a list of IP addresses, CheckPoint gateway conf filename, produced by \nclish -c 'show configuration' \nor \"-\" to read from the console (default)")
-parser.add_argument('--noclish', default=False, help="Do not add \"clish -c\" construction", action="store_true")
+parser.add_argument('--noclish', default=False, help="Do not add \"clish -c\" decorations", action="store_true")
 parser.add_argument('--ifprio', default=10, type=int, help="The beginning priority of the PBR rules, related to the interfaces, default=10")
 parser.add_argument('--rtprio', default=100, type=int, help="The beginning priority of the PBR rules, related to the local routes, default=100")
 parser.add_argument('--ignore_if', default="", help="Comma separated list of interfaces to ignore, default=mgmt,sync,lo")
@@ -164,7 +165,7 @@ parser.add_argument('--list', default=False, help="The input is a list of IP-add
 dir = parser.add_mutually_exclusive_group()
 dir.add_argument('--dst', default=False, help="The list contains the destination addresses", action="store_true")
 dir.add_argument('--src', default=False, help="The list contains the source addresses", action="store_true")
-parser.add_argument('--nodbedit', default=False, help="Do not add dbedit constructions", action="store_true")
+parser.add_argument('--nodbedit', default=False, help="Do not add dbedit decorations", action="store_true")
 parser.add_argument('--table', default="default", help="Table name, default = default")
 parser.add_argument('--listprio', default=1000, type=int, help="The beginning priority of the PBR rules for the list of servers, default=1000")
 parser.add_argument('--fw', default=False, help="Create firewall commands to add the IP-addresses to the config", action="store_true")
@@ -225,7 +226,10 @@ else:
 		print >>sys.stderr, 'ERROR: Can\'t open file', args.conf
 		sys.exit(1)
 
-banner('Run these commands on the firewall(s)\n# First, save the config with clish -c "show configuration" > firewall.date.conf. ')
+banner('Run these commands on the firewall(s)')
+now=datetime.datetime.now()
+print 'clish -c "show configuration" > ~/firewall_clish_before.%s.conf' % now.strftime("%Y%m%d_%H%M")
+
 # If a list of IP-addresses is provided:
 if args.list:
 	for line in f:
@@ -255,6 +259,7 @@ else:
 # Checking if the line should be ignored		
 			if not re_ignore_ip.search(ip + " ") and not re_ignore_ip.search(gw + " "):
 				print_pbr_route(ip, gw)
+print 'clish -c "show configuration" > ~/firewall_clish_after.%s.conf' % now.strftime("%Y%m%d_%H%M")				
 banner("After tested OK, save the config with: clish, save config")
 
 # If needed creating CheckPoint dbedit commands to add IP-addresses to the specified group
