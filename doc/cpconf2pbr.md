@@ -83,6 +83,7 @@ Result:
 
 ```txt
 clish -c "show configuration" > ~/firewall_clish_before.20190214_0233.conf
+clish -c "lock database override "
 clish -c "set pbr table tbond1o2 static-route 1.2.3.1/29 nexthop gateway logical bond1.2 priority 2"
 clish -c "set pbr rule priority 10 match to 1.2.3.0/29"
 clish -c "set pbr rule priority 10 action table tbond1o2"
@@ -120,6 +121,7 @@ Result:
 
 ```txt
 clish -c "show configuration" > ~/firewall_clish_before.20190214_0233.conf
+clish -c "lock database override "
 clish -c "set pbr rule priority 1000 match from 1.2.3.4/32"
 clish -c "set pbr rule priority 1000 action table deftable"
 clish -c "set pbr rule priority 1001 match from 2.3.4.0/23"
@@ -144,6 +146,7 @@ Result:
 # Run these commands on the firewall(s)
 ################################################################################
 clish -c "show configuration" > ~/firewall_clish_before.20190214_0233.conf
+clish -c "lock database override "
 clish -c "set pbr rule priority 1000 match from 1.2.3.4/32"
 clish -c "set pbr rule priority 1000 action table deftable"
 clish -c "set pbr rule priority 1001 match from 2.3.4.0/23"
