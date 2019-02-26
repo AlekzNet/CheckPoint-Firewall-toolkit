@@ -100,12 +100,12 @@ Create the real PBR rules and firewall objects for a list of IP-addresses
 
 #### Examples
 
-List of IP-addresses:
+List of IP-addresses (note the variety of the supported syntax and absense of sensitivity to intermediate spaces or tabs):
 
 ```txt
 cat testpbrlist.txt  
 1.2.3.4
-2.3.4.0 /23
+2.3.4.0/23
  3.4.5.0 255.255.252.0
 6.5.4.3/ 255.255.255.0
 ```
