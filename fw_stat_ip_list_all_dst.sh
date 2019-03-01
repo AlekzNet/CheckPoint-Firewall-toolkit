@@ -1,7 +1,7 @@
 #!/bin/bash
 date
 # Firewall names to check
-#FIREWALLS="segotfcskf sgsinfcskf"
+#FIREWALLS="firewall01 firewall02"
 FIREWALLS="."
 
 # Additional strng to look for
@@ -39,8 +39,15 @@ HEADER="num;date;time;src;dst;proto;service;action"
 # Escape dots with backslashes
 iplist=`cat $1 | tr -s '\n\t ' '|' | sed -e 's/|$//' -e 's/^|//' -e 's/\./\\\./g'`
 echo $iplist
-shift
 
+# Convert the list of IP addresses from the file in the 1st argument
+# from  ;1.2.3.[0-9]; format to
+# ^1\.2\.3\.[0-9]$
+
+relist=`cat $1 | sed -e 's/^;/^/' -e 's/;$/$/' | tr -s '\n\t ' '|' | sed -e 's/|$//' -e 's/^|//' -e 's/\./\\\./g'`
+echo $relist
+
+shift
 
 echo "Being saved to $OUTFILE"
 
@@ -67,7 +74,7 @@ do
                 BEGIN { min=0; TMPFILE="/tmp/fw_stat_ip_list_top_tmp.tmp";system("echo \  >" TMPFILE);}
                         { 
                                 # Counting either sources (4) or destinations (5)
-                                if ( $5 ~ "'$iplist'" ) {
+                                if ( $5 ~ "'$relist'" ) {
                                         src[$4]++;
                                         service=$6 "-" $7;
                                         srv[service]++;
