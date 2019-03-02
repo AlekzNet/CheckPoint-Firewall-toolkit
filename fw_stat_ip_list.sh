@@ -43,9 +43,9 @@ shift
 
 # Convert the list of IP addresses from the file in the 1st argument
 # from  ;1.2.3.[0-9]; format to
-# ^1\.2\.3\.[0-9]$
-
-relist=`cat $1 | sed -e 's/^;/^/' -e 's/;$/$/' | tr -s '\n\t ' '|' | sed -e 's/|$//' -e 's/^|//' -e 's/\./\\\./g'`
+# ^1\\.2\\.3\\.[0-9]$
+# Double back slash is needed for AWK and additional double back slash for shell variable 
+relist=`cat $1 | sed -e 's/^;/^/' -e 's/;$/$/' | tr -s '\n\t ' '|' | sed -e 's/|$//' -e 's/^|//' -e 's/\./\\\\\\\\./g'`
 echo $relist
 
 echo "Being saved to $OUTFILE"
