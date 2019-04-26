@@ -189,6 +189,8 @@ class FW():
 		self.fw_header_print()
 		self.fw_netobj_print(policy.netobj)
 		self.fw_srvobj_print(policy.srvobj)
+		self.fw_netgrp_print(policy.netgrp)
+		self.fw_srvgrp_print(policy.srvgrp)
 		self.fw_rules_print(policy)
 		self.fw_footer_print()
 
@@ -470,6 +472,8 @@ class R77(FW):
 	anyhost="globals:Any"
 	anyservice="globals:Any"
 	action={"permit": "accept_action:accept", "deny": "drop_action:drop"}
+	#re_newline=re.compile(r'(\\n$)|(\\n\\$)')
+	re_newline=re.compile(r'(\n$)|(\n\$)')
 	
 	def __init__(self, policy='test', log=False, comment="", nodbedit=False, mg=0):
 		self.policy = policy	# policy name
@@ -483,7 +487,7 @@ class R77(FW):
 # Gets a (str) line and wraps it in 
 # 'echo -e ' line '\nupdate_all\\n-q\\n" | dbedit -local'
 	def dbedit(self, line):
-		if self.nodbedit: print line
+		if self.nodbedit: print self.re_newline.sub("",line)
 		else: print 'echo -e \"' + line + '\\nupdate_all\\n-q\\n" | dbedit -local'
 		
 	def fw_netobj_print(self,netobj):		
@@ -643,7 +647,7 @@ elif 'fgt' in args.dev:
 	dev=FGT(args.vdom, args.si, args.di, args.label, args.log, args.comment)
 elif 'r77' in args.dev:
 	if args.nolog: args.log = "disable"
-	dev=R77(args.policy, args.log, args.comment)
+	dev=R77(args.policy, args.log, args.comment, args.nodbedit)
 else:
 	print >>sys.stderr, dev, "is not supported. It should be: asa (Cisco ASA), fgt (FortiGate) or r77 (CheckPOint R77)"
 	sys.exit(1)
