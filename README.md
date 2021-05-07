@@ -14,6 +14,9 @@ Various tools to work with CheckPoint firewall
 * sem_parse_posix.sh - same as above, but it's compatible POSIX AWK (CheckPoint AWK is very old and does not support GNU extensions)
 * CParser.py - converts a CheckPoint .C file into a pthon list
 * genacl.py - generates dbedit commands to update CheckPoint objects and policy (rule generation is not fully tested yet)
+* cp.sh - Shell script to remotely collect CheckPoint configs
+* cp.exp - Expect script to remotely get and save CheckPoint Clish configuration and cluster IP-addresses
+* cp.list - list of CheckPoint firewall IP's and hostnames (to download the config from or upload to)
 
 For both fw_stat_ip_list.sh and fw_stat_ip_list_10min.sh, the CheckPointlogs should be converted to TXT (e.g. using logex.sh) using the following format:
 
