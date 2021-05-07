@@ -1,0 +1,44 @@
+#!/usr/bin/expect -f
+
+# Set variables
+set hostip [lindex $argv 0]
+set hostname [lindex $argv 1]
+set username [lindex $argv 2]
+set password [lindex $argv 3]
+set enablepassword [lindex $argv 4]
+set logfile [lindex $argv 5]
+
+spawn ssh $username\@$hostip
+
+expect {
+timeout { send_user "\nTimeout Exceeded - Check Host\n"; exit 1 }
+eof { send_user "\nSSH Connection To $hostname Failed\n"; exit 1 }
+"*#" {}
+"*assword:" {
+send "$password\n"
+}
+}
+
+log_user 0
+
+log_file -noappend -a ${logfile}_clish.conf
+send "clish -c \"show configuration\"\n"
+expect {
+"*]#" {}
+}
+log_file
+send_user "\n${hostname} CLISH configuration saved\n"
+
+log_user 0
+log_file -noappend -a ${logfile}_cluster.conf
+send "cphaprob -a if\n"
+
+expect {
+"*]#" {}
+}
+log_file
+send_user "\n${hostname} cluster configuration saved\n"
+
+
+send "exit\r"
+exit 0
